@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<title> GroVID19 </title>
+
+<head>
+	<center>
+		<h1>Welcome to GroVID19</h1>
+	</center>
+</head>
+
+<body>
+
+	<center>
+		<h2>Find a store with the least crowds!</h2>
+
+		<p>Enter your preferences to begin</p>
+
+		<form action="http://localhost:5000/grovid19_vp" method="post">
+			<p>What's your current location? <input type="text" name="form_address" /></p>
+
+			<p>Select the type of store you're looking for:
+				<select id="" name="form_store_type">
+					<option value="supermarket">Grocery / Supermarket</option>
+					<option value="pharmacy">Pharmacy</option>
+					<option value="bakery">Bakery</option>
+				</select></p>
+
+			<p>How far can you travel (in meters)? <input type="text" name="form_radius" /></p>
+
+			<p><input type="submit" value="Submit"></p>
+		</form>
+
+	</center>
+</body>
+
+</html>
