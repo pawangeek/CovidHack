@@ -21,6 +21,14 @@ alpha = 180/(np.pi*6371000)
 def home():
 	return render_template('homes.html')
 
+@app.route('/error')
+def error():
+    return render_template('error.html')
+
+@app.route('/results')
+def results(store_gmap_url, store_name):
+    return render_template('results.html', store_gmap_url = store_gmap_url, store_name=store_name)
+
 # Run Store Search and Selection
 @app.route('/details',methods = ['GET', 'POST'])
 def detail():
@@ -38,8 +46,6 @@ def detail():
         # Find the google place from the user_address input
         user_address_res = requests.get(url + 'query=' + user_address +    '&key=' + MyAPI_key)
         x = user_address_res.json()
-
-        print(x)
         
         # Get location data from search result
         user_location = x["results"][0]["geometry"]["location"]
@@ -87,7 +93,7 @@ def detail():
         # If no Stores are found give out an error
         if len(store_list) == 0:
             #return 'there has been an error: No data available for this choice'
-            return render_template('error.html')
+            return redirect(url_for('error'))
         
         # Select the store with the least activity and get its ID and name
         df=pd.DataFrame(store_list)
@@ -97,11 +103,8 @@ def detail():
         
         # Create google maps link based of store_place_id
         store_gmap_url = "https://www.google.com/maps/place/?q=place_id:" + store_place_id
-        
-        #return 'This store has the least crowd: %s' % store_gmap_url
-        #return redirect(url_for('success',store_place_id))
 
-        return render_template('results.html', store_gmap_url=store_gmap_url, store_name= store_name)
+        return redirect(url_for('/results', store_gmap_url=store_gmap_url, store_name= store_name))
 
     else:
         return render_template('details.html', form=form)

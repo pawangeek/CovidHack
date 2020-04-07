@@ -1,6 +1,13 @@
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators,DateTimeField,IntegerField
+from wtforms.validators import Length, InputRequired
 
 class DetailForm(Form):
-    user_address  = StringField('Location', [validators.Length(min=1, max=100)])
-    store_type = StringField('Type of Store',[validators.Length(min=1,max=100)])
-    radius = StringField('Upto travel (In mtrs)', [validators.Length(min=1, max=100)])
+
+    regions = [
+        ('', ('Choose')),
+        ('supermarket', ('Grocery / Supermarket')),
+        ('pharmacy', ('Pharmacy'))     
+        ]
+    user_address  = StringField('Location', validators=[InputRequired(), Length(min=1, max=100)])
+    store_type = StringField('Type of Store',choices=regions,validators= [InputRequired(), Length(min=1,max=100)])
+    radius = StringField('Upto travel (In mtrs)', validators=[InputRequired(), Length(min=1, max=5)])
