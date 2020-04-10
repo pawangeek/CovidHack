@@ -17,6 +17,20 @@ url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
 # constant factor used later to calculate the area (longitude, latitude) to scan for stores
 alpha = 180/(np.pi*6371000)
 
+
+def get_coords(ip_address):
+    try:
+        response = requests.get("http://ip-api.com/json/{}".format(ip_address))
+        js = response.json()
+        latitute = js['lat']
+        longitude = js['lon']
+        l=[latitute,longitude]
+
+        return l
+
+    except Exception as e:
+        return "Unknown"
+
 @app.route('/')
 def home():
 	return render_template('homes.html')
@@ -25,9 +39,9 @@ def home():
 def error():
     return render_template('error.html')
 
-@app.route('/results')
-def results(store_gmap_url, store_name):
-    return render_template('results.html', store_gmap_url = store_gmap_url, store_name=store_name)
+@app.route('/stop')
+def stop():
+    return render_template('stop.html')
 
 # Run Store Search and Selection
 @app.route('/details',methods = ['GET', 'POST'])
@@ -37,17 +51,14 @@ def detail():
         # Import User Input
         user_address = form.user_address.data
         store_type = form.store_type.data
-        radius = form.radius.data
+        radius = form.radius.data 
 
         radius = int(radius)
-
-        print(user_address, store_type, radius)
         
         # Find the google place from the user_address input
         user_address_res = requests.get(url + 'query=' + user_address +    '&key=' + MyAPI_key)
         x = user_address_res.json()
-        
-        # Get location data from search result
+
         user_location = x["results"][0]["geometry"]["location"]
 
         user_latitude = user_location["lat"]
@@ -65,8 +76,6 @@ def detail():
         
         if store_type == 'pharmacy':
             results = populartimes.get(MyAPI_key,["pharmacy"],p1,p2,radius = radius, all_places=False,n_threads = 10)
-        
-        print(results)
 
         # Find out the current time at the user's location (can only be found by a place details request)
         user_location_id = x["results"][0]["reference"]
@@ -104,10 +113,10 @@ def detail():
         # Create google maps link based of store_place_id
         store_gmap_url = "https://www.google.com/maps/place/?q=place_id:" + store_place_id
 
-        return redirect(url_for('/results', store_gmap_url=store_gmap_url, store_name= store_name))
+        return render_template('stop.html', value=store_name)
 
     else:
-        return render_template('details.html', form=form)
+        return render_template('details.html', form=form) 
 
 if __name__ == '__main__':
     app.config['TEMPLATES_AUTO_RELOAD'] = True
