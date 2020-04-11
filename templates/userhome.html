@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+{% block body %}
+
+<div class="collapse navbar-collapse" id="myNavbar">
+        <ul class="nav navbar-nav navbar-right">
+          {% if session.log %}
+          <li><a href="/logout">LOG OUT</a></li>
+          {% else  %}
+          <li><a href="/userlogin">LOGIN/REGISTER</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+
+{% endblock %}

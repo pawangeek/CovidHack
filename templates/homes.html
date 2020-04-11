@@ -1,20 +1,94 @@
 {% extends 'layout.html' %}
 {% block body %}
 
-    <body style="background-image: url('static/img/grad.jpg');";>
-    <style>ul.demo{
-      margin-left: 200px; font-size: 20px; margin-top: 30px;}
-      h1{font-size: 70px;
-      }
-      
-      .con{margin-left: 350px; margin-top: 70px;
-      }</style>
-      </body>
-    <h1 align="center">Anivarya Setu</h1>
-    <p class="lead" align="center" font size="15" ><ul class="demo"><li>This application is built on the Python Flask framework</li>
-      <li>We can use this to get least crowded nearby pharmacy/ supermarkets </li>
-      <li>Can be used to register Organisation/ NGO providing ration of meals</li>
-      <li>Used by Pharmacies and grocery shops in providing details of masks/ Sanitizers etc.</li>
-      </ul></p>
+    <style>
+        ul.demo {
+            margin-left: 200px; font-size: 20px; margin-top: 30px; }
+        h1{
+          font-size: 50px;}
+
+        * {
+            box-sizing: border-box; }
+        body {
+  font-family: Arial, Helvetica, sans-serif; }
+
+/* Float four columns side by side */
+.column {
+  float: left;
+  width: 25%;
+  padding: 0 10px;
+}
+
+/* Remove extra left and right margins, due to padding */
+.row {margin: 0 -5px;}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Responsive columns */
+@media screen and (max-width: 600px) {
+  .column {
+      width: 100%;
+      display: block;
+      margin-bottom: 20px;
+  }
+}
+
+/* Style the counter cards */
+.card {
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    transition: 0.3s;
+    padding: 16px;
+    text-align: center;
+    background-color: #f1f1f1;
+}
+        .card:hover {
+  box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+}
+
+    </style>
+
+    <h1 style="text-align:center">Anivarya Setu</h1>
+    <p class="lead" style="text-align:center; font-size:10px" ><ul class="demo">
+    <li>This application is built on the Python Flask framework</li>
+      <li>We can use this to get least crowded nearby pharmacy </li>
+        <li> To request for food from nearby Govt./NGO help</li>
+      </ul>
+
+    <h2 style="text-align:center">Who are You ?</h2>
+
+    <div class="row">
+    <div class="column">
+    <div class="card">
+        <img src="{{ url_for('static', filename='images/indi.png') }}" alt="Avatar" style="width:100%">
+        <a href="/userregister" style="font-size: 15px; text-decoration: underline;" class="stretched-link">For needy ones</a>
+    </div>
+    </div>
+
+    <div class="column">
+    <div class="card">
+        <img src="{{ url_for('static', filename='images/medical.png') }}" alt="Avatar" style="width:100%">
+      <p>For Medical shop Owners</p>
+    </div>
+    </div>
+
+    <div class="column">
+    <div class="card">
+        <img src="{{ url_for('static', filename='images/community.jpg') }}" alt="Avatar" style="width:100%">
+      <p>For NGOs/Communities</p>
+    </div>
+  </div>
+
+  <div class="column">
+    <div class="card">
+        <img src="{{ url_for('static', filename='images/path.png') }}" alt="Avatar" style="width:100%">
+        <a href="/details" style="font-size: 15px; text-decoration: underline;" class="stretched-link">For least crowded shop</a>
+    </div>
+  </div>
+</div>
     
 {% endblock %}

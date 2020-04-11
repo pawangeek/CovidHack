@@ -1,0 +1,26 @@
+{% extends 'layout.html' %}
+{% block body %}
+    <h1 style="text-align: center;">Welcome to the Login Page</h1>
+    <h2 style="text-align: center;">Please Complete the Following Fields</h2>
+
+    {% from "includes/_formhelpers.html" import render_field %}
+    <form method="POST" action="">
+    <div class="form-group">
+        {{render_field(form.email, class_="form-control")}}
+    </div>
+        <div class="form-group">
+            {{render_field(form.password, class_="form-control")}}</div>
+    <p><input type="submit" class="btn btn-primary" value="Submit"></p>
+    {%include "includes/_messages.html"%}
+    </form>
+
+    <a href="/forgetpassword">Forgot password?</a>
+
+    <br>
+    <br>
+
+    <a href="/userregister">Click Here To Register!</a>
+
+
+
+{% endblock %}
