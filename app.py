@@ -8,18 +8,28 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from datetime import datetime, timedelta
 from flask import Flask, redirect, url_for, request, render_template, session, flash
 from flask_mail import Mail, Message
+from flask_login import LoginManager, login_required
+from flask_googlemaps import GoogleMaps, Map
 
 # Create Flask App
 app = Flask(__name__)
+app.secret_key = "xb1\x058\xb8o\x82\xaf\xdb\xd5I"
 app.config.from_pyfile('config.cfg')
-mail = Mail(app)
-
-engine = create_engine("mysql+pymysql://root:pawan@localhost/covid")
-db = scoped_session(sessionmaker(bind=engine))
-s = URLSafeTimedSerializer('Thisisasecret!')
 
 # Get Google Places API: https://developers.google.com/places/web-service/get-api-key and replace
 MyAPI_key = "AIzaSyDs1sK7EGAGGvPvRiWX_X4yYDUjTQb5MyI"
+
+GoogleMaps(app,key=MyAPI_key)
+mail = Mail(app)
+
+key = 'xb1\x058\xb8o\x82\xaf\xdb\xd5I'
+engine = create_engine("mysql+pymysql://root:pawan@localhost/covid")
+db = scoped_session(sessionmaker(bind=engine))
+s = URLSafeTimedSerializer(key)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "userlogin"
 
 # URL for request to google place text search to find user address based on what is typed in
 url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
@@ -49,24 +59,23 @@ def home():
 
 @app.route("/userregister", methods=["GET", "POST"])
 def register():
-    form2 = UserForm(request.form)
-    if request.method == 'POST' and form2.validate():
-        fname = form2.fname.data
-        lname = form2.lname.data
-        email = form2.email.data
-        password = form2.password.data
-        confirm = form2.confirm_password.data
-        secure_password = (str(password))
+    form = UserForm(request.form)
+    if request.method == 'POST' and form.validate():
+        fname = form.fname.data
+        lname = form.lname.data
+        email = form.email.data
+        password = form.password.data
+        confirm = form.confirm_password.data
 
         emaildata = db.execute("SELECT email FROM users WHERE email=:email", {"email": email}).fetchone()
 
         if emaildata is not None:
             flash("Email taken", "danger")
-            return render_template("userregister.html")
+            return render_template("userregister.html", form=form)
 
         if password == confirm:
             db.execute("INSERT INTO users (first_name, last_name, email, pass) VALUES (:fname, :lname, :email, :password)", {
-                       "fname": fname, "lname": lname, "email": email, "password": secure_password})
+                       "fname": fname, "lname": lname, "email": email, "password": password})
             db.commit()
 
             email = request.form['email']
@@ -75,16 +84,16 @@ def register():
             msg = Message('Confirm Email', sender='anhappysingh@gmail.com', recipients=[email])
             link = url_for('confirm_email', token=token, _external=True)
 
-            msg.body = 'Your confirmation link is {}'.format(link)
+            msg.body = link
             mail.send(msg)
             flash("A confirmation email has been sent. Please confirm your email.", "success")
-            return render_template("userregister.html")
+            return render_template("userregister.html", form=form)
 
         else:
             flash("Passwords do not match", "danger")
-            return render_template("userregister.html")
+            return render_template("userregister.html",form=form)
 
-    return render_template("userregister.html")
+    return render_template("userregister.html",form=form)
 
 
 @app.route('/confirm_email/<token>')
@@ -100,8 +109,8 @@ def confirm_email(token):
 
 @app.route("/userlogin", methods=["GET", "POST"])
 def userlogin():
-    form3 = UserLogin(request.form)
-    if request.method == 'POST' and form3.validate():
+    form = UserLogin(request.form)
+    if request.method == 'POST' and form.validate():
 
         email = request.form.get("email")
         password = request.form.get("password")
@@ -115,7 +124,7 @@ def userlogin():
 
         if emaildata is None:
             flash("Email not found. Please try again.", "danger")
-            return render_template("userlogin.html")
+            return render_template("userlogin.html", form=form)
         else:
             for password_data in passwordData:
                 if password==password_data:
@@ -126,11 +135,11 @@ def userlogin():
                         return redirect(url_for('admin'))
                     flash("You are logged in.")
                     session["USER"] = email
-                    return render_template("userhome.html")
+                    return redirect(url_for('userhome'))
                 else:
                     flash("Incorrect password", "danger")
-                    return render_template("userlogin.html")
-    return render_template("userlogin.html")
+                    return render_template("userlogin.html",form=form)
+    return render_template("userlogin.html",form=form)
 
 
 @app.route("/forgetpassword", methods=["GET", "POST"])
@@ -160,11 +169,15 @@ def forget_password():
 
 
 @app.route("/logout")
+@login_required
 def logout():
     session.clear()
     flash("You are logged out", "success")
     return redirect(url_for('userlogin'))
 
+@app.errorhandler(401)
+def page_not_found(e):
+    return render_template('error.html')
 
 @app.route('/error')
 def error():
@@ -179,6 +192,37 @@ def stop():
 @app.route("/admin")
 def admin():
     return render_template("adminlogin.html")
+
+
+@app.route("/userhome", methods=['GET','POST'])
+def userhome():
+    if request.form.get("packet"):
+        packets = request.form['packet']
+
+        if packets<1:
+            flash("Invalid Quantity", "danger")
+        if packets>6:
+            flash("Maximum 6 from one user", "danger")
+
+    # ipaddr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+    # loc = get_coords(ipaddr)
+
+    ipaddr = '157.37.154.227'
+    loc = get_coords(ipaddr)
+
+    mymap = Map(
+        identifier="view-side",
+        lat=loc[0],
+        lng=loc[1],
+        markers=[{
+             'icon': 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+             'lat': loc[0],
+             'lng': loc[1],
+             'infobox': "<b>Your current location</b>"
+          }
+        ])
+
+    return render_template("userhome.html", mymap= mymap)
 
 
 # Run Store Search and Selection
@@ -252,7 +296,12 @@ def detail():
         return render_template('stop.html', value=store_name, key=store_gmap_url)
 
     else:
-        return render_template('details.html', form=form) 
+        return render_template('details.html', form=form)
+
+
+@login_manager.user_loader
+def load_user(userid):
+    return db.query.get(userid)
 
 
 if __name__ == '__main__':

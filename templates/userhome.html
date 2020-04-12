@@ -1,6 +1,14 @@
 {% extends 'layout.html' %}
 {% block body %}
+    {{mymap.js}}
+<style>.map-container{
+    margin-left: 315px;
 
+} </style>
+<div class="map-container">
+            <h1>Here is your location</h1><hr>
+            {{ mymap.html }}
+        </div>
 <div class="collapse navbar-collapse" id="myNavbar">
         <ul class="nav navbar-nav navbar-right">
           {% if session.log %}
@@ -10,6 +18,10 @@
           {% endif %}
         </ul>
       </div>
+    <input type="packets" name="packets" size="30" style="margin-left: 360px; margin-bottom: 10px; text-align: center" placeholder="Enter Quantity required">
+    <div class="input-group-btn">
+            <button type="submit" class="btn btn-danger" style="margin-left: 430px">Submit</button>
+        </div>
 
 
 {% endblock %}
