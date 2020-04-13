@@ -5,11 +5,8 @@
     margin-left: 315px;
 
 } </style>
-<div class="map-container">
-            <h1>Here is your location</h1><hr>
-            {{ mymap.html }}
-        </div>
-<div class="collapse navbar-collapse" id="myNavbar">
+
+    <div class="collapse navbar-collapse" id="myNavbar">
         <ul class="nav navbar-nav navbar-right">
           {% if session.log %}
           <li><a href="/logout">LOG OUT</a></li>
@@ -18,8 +15,20 @@
           {% endif %}
         </ul>
       </div>
-    <input type="packets" name="packets" size="30" style="margin-left: 360px; margin-bottom: 10px; text-align: center" placeholder="Enter Quantity required">
-    <div class="input-group-btn">
+
+    <div class="map-container"  style="margin-bottom: 30px">
+            <h2 style="margin-left: 20px; margin-bottom: 20px">Here is your location</h2>
+            {{ mymap.html }}
+    </div>
+
+    <form class="form-inline" action="" method="POST">
+            <div class="input-group">
+                <label style="margin-left: 350px">Input Quantity you want in range(1-6)</label>
+            </div>
+
+        <input type="packets" name="packets" size="30" style="margin-left: 360px; margin-bottom: 10px; text-align: center" placeholder="Enter Quantity required">
+
+        <div class="input-group-btn">
             <button type="submit" class="btn btn-danger" style="margin-left: 430px">Submit</button>
         </div>
 

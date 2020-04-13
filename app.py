@@ -8,6 +8,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from datetime import datetime, timedelta
 from flask import Flask, redirect, url_for, request, render_template, session, flash
 from flask_mail import Mail, Message
+from model import get_coords
 from flask_login import LoginManager, login_required
 from flask_googlemaps import GoogleMaps, Map
 
@@ -36,21 +37,6 @@ url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
 
 # constant factor used later to calculate the area (longitude, latitude) to scan for stores
 alpha = 180/(np.pi*6371000)
-
-
-def get_coords(ip_address):
-    try:
-        response = requests.get("http://ip-api.com/json/{}".format(ip_address))
-        js = response.json()
-        latitude = js['lat']
-        longitude = js['lon']
-        place = [latitude, longitude]
-
-        return place
-
-    except Exception as e:
-        return "Unknown"
-
 
 @app.route('/')
 def home():
@@ -115,12 +101,9 @@ def userlogin():
         email = request.form.get("email")
         password = request.form.get("password")
 
-        emaildata = db.execute("SELECT email FROM users WHERE email=:email", {
-            "email": email}).fetchone()
-        passwordData = db.execute("SELECT pass FROM users WHERE email=:email", {
-                                  "email": email}).fetchone()
-        userTypeData = db.execute("SELECT userType FROM users WHERE email=:email AND userType=1", {
-                                  "email": email}).fetchone()
+        emaildata = db.execute("SELECT email FROM users WHERE email=:email", {"email": email}).fetchone()
+        passwordData = db.execute("SELECT pass FROM users WHERE email=:email", {"email": email}).fetchone()
+        userTypeData = db.execute("SELECT userType FROM users WHERE email=:email AND userType=1", {"email": email}).fetchone()
 
         if emaildata is None:
             flash("Email not found. Please try again.", "danger")
@@ -131,7 +114,6 @@ def userlogin():
                     session["log"] = True
                     # login as admin if userTypeData returns a value which it only does if usertype equals 1
                     if userTypeData is not None:
-                        flash("You are logged in as an admin.")
                         return redirect(url_for('admin'))
                     flash("You are logged in.")
                     session["USER"] = email
@@ -146,17 +128,14 @@ def userlogin():
 def forget_password():
     if request.form.get("email"):
         email = request.form['email']
-
-        emaildata = db.execute("SELECT email FROM users WHERE email=:email", {
-            "email": email}).fetchone()
+        emaildata = db.execute("SELECT email FROM users WHERE email=:email", {"email": email}).fetchone()
 
         if emaildata is None:
             flash("Email not found. Please try again.", "danger")
             return render_template("forgetpassword.html")
         else:
             new_password = (str('new_password'))
-            db.execute("UPDATE users SET pass=:password WHERE email=:email", {
-                       "password": new_password, "email": email})
+            db.execute("UPDATE users SET pass=:password WHERE email=:email", {"password": new_password, "email": email})
             db.commit()
             msg = Message('Forget Password',
                           sender='anhappysingh@gmail.com', recipients=[email])
@@ -194,34 +173,46 @@ def admin():
     return render_template("adminlogin.html")
 
 
+def get_map(loc):
+    mymap = Map(identifier="view-side", lat=loc[0], lng=loc[1],
+        markers=[{
+            'icon': 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png','zoom': 16,
+            'lat': loc[0], 'lng': loc[1], 'infobox': "<b>Your current location</b>"}])
+
+    return mymap
+
+
 @app.route("/userhome", methods=['GET','POST'])
 def userhome():
-    if request.form.get("packet"):
-        packets = request.form['packet']
-
-        if packets<1:
-            flash("Invalid Quantity", "danger")
-        if packets>6:
-            flash("Maximum 6 from one user", "danger")
-
-    # ipaddr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
-    # loc = get_coords(ipaddr)
 
     ipaddr = '157.37.154.227'
     loc = get_coords(ipaddr)
+    mymap = get_map(loc)
 
-    mymap = Map(
-        identifier="view-side",
-        lat=loc[0],
-        lng=loc[1],
-        markers=[{
-             'icon': 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-             'lat': loc[0],
-             'lng': loc[1],
-             'infobox': "<b>Your current location</b>"
-          }
-        ])
+    if request.form.get("packets"):
+        packets = request.form['packets']
+        email = session["USER"]
+        current = db.execute("SELECT quantity FROM users WHERE email=:email", {"email": email}).fetchone()
 
+        if int(packets) < 1:
+            flash("Invalid Quantity", "danger")
+            return redirect(url_for('userhome'))
+        if int(packets) > 6:
+            flash("Maximum 6 from one signup", "danger")
+            return redirect(url_for('userhome'))
+        if int(current.quantity) != 0:
+            flash("You already submitted a request","danger")
+            return redirect(url_for('userhome'))
+
+        else:
+            db.execute("UPDATE users SET quantity=:quantity WHERE email=:email", {"quantity": packets, "email": email})
+            db.commit()
+
+            flash("Your Request has been submitted", "success")
+            return redirect(url_for('userhome'))
+
+    # ipaddr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+    # loc = get_coords(ipaddr)
     return render_template("userhome.html", mymap= mymap)
 
 

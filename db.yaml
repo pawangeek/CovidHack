@@ -1,0 +1,5 @@
+mysql_host : 'localhost'
+mysql_user : 'root'
+mysql_password : 'pawan'
+mysql_db : 'covid'
+mysql_cursorclass : 'DictCursor'
