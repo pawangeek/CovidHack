@@ -24,3 +24,10 @@ class UserLogin(Form):
 
     email = StringField('Email ID', validators=[InputRequired(), Length(min=1, max=100)])
     password = PasswordField('Password', validators=[InputRequired(), Length(min=10, max=100)])
+
+class NGOForm(Form):
+
+    name = StringField('First Name', validators=[InputRequired(), Length(min=1, max=100)])
+    email = StringField('Email ID', validators=[InputRequired(), Length(min=1, max=100)])
+    password = PasswordField('Password', validators=[InputRequired(), Length(min=10, max=100)])
+    confirm_password = PasswordField('Confirm Password', validators=[InputRequired(), Length(min=10, max=100)])

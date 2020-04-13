@@ -2,15 +2,16 @@ import requests, json, populartimes
 import numpy as np
 import pandas as pd
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
-from form import DetailForm, UserForm, UserLogin
+from form import DetailForm, UserForm, UserLogin, NGOForm
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from datetime import datetime, timedelta
 from flask import Flask, redirect, url_for, request, render_template, session, flash
 from flask_mail import Mail, Message
-from model import get_coords
+from models import get_coords
 from flask_login import LoginManager, login_required
 from flask_googlemaps import GoogleMaps, Map
+from haversine import haversine
 
 # Create Flask App
 app = Flask(__name__)
@@ -18,7 +19,7 @@ app.secret_key = "xb1\x058\xb8o\x82\xaf\xdb\xd5I"
 app.config.from_pyfile('config.cfg')
 
 # Get Google Places API: https://developers.google.com/places/web-service/get-api-key and replace
-MyAPI_key = "AIzaSyDs1sK7EGAGGvPvRiWX_X4yYDUjTQb5MyI"
+MyAPI_key = "Put your key"
 
 GoogleMaps(app,key=MyAPI_key)
 mail = Mail(app)
@@ -53,6 +54,13 @@ def register():
         password = form.password.data
         confirm = form.confirm_password.data
 
+        # ipaddr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+        # loc = get_coords(ipaddr)
+
+        ipaddr = '157.37.154.227' # hard coded till we deploy it
+        loc = get_coords(ipaddr)
+        lat, lon = loc[0], loc[1]
+
         emaildata = db.execute("SELECT email FROM users WHERE email=:email", {"email": email}).fetchone()
 
         if emaildata is not None:
@@ -60,8 +68,8 @@ def register():
             return render_template("userregister.html", form=form)
 
         if password == confirm:
-            db.execute("INSERT INTO users (first_name, last_name, email, pass) VALUES (:fname, :lname, :email, :password)", {
-                       "fname": fname, "lname": lname, "email": email, "password": password})
+            db.execute("INSERT INTO users (first_name, last_name, email, pass,lon, lat) VALUES (:fname, :lname, :email, :password, :lon,:lan)", {
+                       "fname": fname, "lname": lname, "email": email, "password": password, "lon":lon, "lat":lat})
             db.commit()
 
             email = request.form['email']
@@ -81,6 +89,51 @@ def register():
 
     return render_template("userregister.html",form=form)
 
+
+@app.route("/ngoregister", methods=["GET","POST"])
+def ngoregister():
+    form = NGOForm(request.form)
+    if request.method == 'POST' and form.validate():
+        name = form.name.data
+        email = form.email.data
+        password = form.password.data
+        confirm = form.confirm_password.data
+
+        # ipaddr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+        # loc = get_coords(ipaddr)
+
+        ipaddr = '157.37.154.227'  # hard coded till we deploy it
+        loc = get_coords(ipaddr)
+        lat, lon = loc[0], loc[1]
+
+        emaildata = db.execute("SELECT email FROM users WHERE email=:email", {"email": email}).fetchone()
+
+        if emaildata is not None:
+            flash("Email taken", "danger")
+            return render_template("ngoregister.html", form=form)
+
+
+        if password == confirm:
+            db.execute("INSERT INTO users (first_name, email, pass, usertype ,lon, lat) VALUES (:fname, :email, :password, :usertype, :lon,:lat)",
+                       { "fname": name, "email": email, "password": password, "usertype":3, "lon":lon, "lat":lat})
+            db.commit()
+
+            email = request.form['email']
+            token = s.dumps(email, salt='email-confirm')
+
+            msg = Message('Confirm Email', sender='anhappysingh@gmail.com', recipients=[email])
+            link = url_for('confirm_email', token=token, _external=True)
+
+            msg.body = link
+            mail.send(msg)
+            flash("A confirmation email has been sent. Please confirm your email.", "success")
+            return render_template("ngoregister.html", form=form)
+
+        else:
+            flash("Passwords do not match", "danger")
+            return render_template("ngoregister.html",form=form)
+
+    return render_template("ngoregister.html",form=form)
 
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
@@ -103,21 +156,26 @@ def userlogin():
 
         emaildata = db.execute("SELECT email FROM users WHERE email=:email", {"email": email}).fetchone()
         passwordData = db.execute("SELECT pass FROM users WHERE email=:email", {"email": email}).fetchone()
-        userTypeData = db.execute("SELECT userType FROM users WHERE email=:email AND userType=1", {"email": email}).fetchone()
+        userTypeData = db.execute("SELECT userType FROM users WHERE email=:email", {"email": email}).fetchone()
 
         if emaildata is None:
             flash("Email not found. Please try again.", "danger")
             return render_template("userlogin.html", form=form)
         else:
+
             for password_data in passwordData:
                 if password==password_data:
                     session["log"] = True
-                    # login as admin if userTypeData returns a value which it only does if usertype equals 1
-                    if userTypeData is not None:
-                        return redirect(url_for('admin'))
                     flash("You are logged in.")
                     session["USER"] = email
-                    return redirect(url_for('userhome'))
+
+                    print(userTypeData.userType)
+
+                    if (int(userTypeData.userType)==2):
+                        print("yes")
+                        return redirect(url_for('userhome'))
+                    elif (int(userTypeData.userType)==3):
+                        return redirect(url_for('ngohome'))
                 else:
                     flash("Incorrect password", "danger")
                     return render_template("userlogin.html",form=form)
@@ -177,14 +235,33 @@ def get_map(loc):
     mymap = Map(identifier="view-side", lat=loc[0], lng=loc[1],
         markers=[{
             'icon': 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png','zoom': 16,
-            'lat': loc[0], 'lng': loc[1], 'infobox': "<b>Your current location</b>"}])
+            'lat': loc[0], 'lng': loc[1], 'infobox': "<b>Your current location</b>",
+        'style':'width:500px'}])
 
     return mymap
+
+
+@app.route("/ngohome", methods=['GET','POST'])
+def ngohome():
+    # Hardcoded till we deploy it so that we can get user ip addr
+    ipaddr = '157.37.154.227'
+    loc = get_coords(ipaddr)
+
+    # hardcoded can be taken by nearest requesters
+    loc2 = [26.9363461, 75.9213346]
+    mymap = get_map(loc)
+
+    calc_dist = haversine(loc,loc2)
+    if calc_dist<20:
+        print("yes there is a request")
+
+    return render_template("ngohome.html", mymap=mymap)
 
 
 @app.route("/userhome", methods=['GET','POST'])
 def userhome():
 
+    # Hardcoded till we deploy it so that we can get user ip addr
     ipaddr = '157.37.154.227'
     loc = get_coords(ipaddr)
     mymap = get_map(loc)

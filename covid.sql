@@ -39,3 +39,7 @@ WHERE id = 1;
 
 SELECT * FROM usertypes;
 SELECT * FROM users;
+
+alter table users modify last_name varchar(255) null;
+alter table users add lon float not null default 0;
+alter table users add lat float not null default 0;
