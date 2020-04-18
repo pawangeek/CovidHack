@@ -19,6 +19,7 @@
 
 #### Demo-Link
 [![Project Screen](https://img.youtube.com/vi/Z9XJ0ja7GY4/0.jpg)](https://www.youtube.com/watch?v=Z9XJ0ja7GY4)
+[![Project Screen](https://img.youtube.com/vi/uQkd-ucZRpE/0.jpg)](https://www.youtube.com/watch?v=uQkd-ucZRpE)
 
 #### Android app of this project can be found at: [covid-hack](https://github.com/naman653/CovidHack)
 #### Built During : [Hackathon](https://www.hackerearth.com/challenges/hackathon/code19-india/)
